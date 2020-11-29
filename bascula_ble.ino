@@ -1,20 +1,7 @@
 /*
-   Create a BLE server that, once we receive a connection, will send periodic notifications.
-   The service advertises itself as: 6E400001-B5A3-F393-E0A9-E50E24DCCA9E
-   Has a characteristic of: 6E400002-B5A3-F393-E0A9-E50E24DCCA9E - used for receiving data with "WRITE"
-   Has a characteristic of: 6E400003-B5A3-F393-E0A9-E50E24DCCA9E - used to send data with  "NOTIFY"
+ * Bascula que expone los datos mediante BLE
+ */
 
-   The design of creating the BLE server is:
-   1. Create a BLE Server
-   2. Create a BLE Service
-   3. Create a BLE Characteristic on the Service
-   4. Create a BLE Descriptor on the characteristic
-   5. Start the service.
-   6. Start advertising.
-
-   In this example rxValue is the data received (only accessible inside that function).
-   And txValue is the data to be sent, in this example just a byte incremented every second.
-*/
 #include <string.h>
 #include <BLEDevice.h>
 #include <BLEServer.h>
@@ -24,7 +11,6 @@
 
 // Initialize our HX711 interface
 HX711 scale;
-const float calibration_factor = -113.00;
 const int LOADCELL_DOUT_PIN = 18;
 const int LOADCELL_SCK_PIN = 21;
 const int LOADCELL_OFFSET = -155412;
@@ -33,13 +19,6 @@ const int LOADCELL_SCALE = 22;
 BLECharacteristic *pCharacteristic;
 bool deviceConnected = false;
 bool wasConnected = false;
-float txValue = 0;
-const int readPin = 32; // Use GPIO number. See ESP32 board pinouts
-
-//std::string rxValue; // Could also make this a global var to access it in loop()
-
-// See the following for generating UUIDs:
-// https://www.uuidgenerator.net/
 
 #define SERVICE_UUID           "6E400001-B5A3-F393-E0A9-E50E24DCCA9E" // UART service UUID
 #define CHARACTERISTIC_UUID_RX "6E400002-B5A3-F393-E0A9-E50E24DCCA9E"
@@ -56,7 +35,8 @@ class MyServerCallbacks: public BLEServerCallbacks {
 };
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(9600);
+  setCpuFrequencyMhz(80);
 
   scale.begin(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN);
   scale.set_offset(LOADCELL_OFFSET);

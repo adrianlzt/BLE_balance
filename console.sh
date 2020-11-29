@@ -1,1 +1,1 @@
-sudo picocom -b 115200 /dev/ttyUSB0
+sudo picocom -b 9600 /dev/ttyUSB0
