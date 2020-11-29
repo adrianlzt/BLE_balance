@@ -18,7 +18,6 @@ const int LOADCELL_SCALE = 22;
 
 BLECharacteristic *pCharacteristic;
 bool deviceConnected = false;
-bool wasConnected = false;
 
 #define SERVICE_UUID           "6E400001-B5A3-F393-E0A9-E50E24DCCA9E" // UART service UUID
 #define CHARACTERISTIC_UUID_RX "6E400002-B5A3-F393-E0A9-E50E24DCCA9E"
@@ -27,10 +26,14 @@ bool wasConnected = false;
 class MyServerCallbacks: public BLEServerCallbacks {
     void onConnect(BLEServer* pServer) {
       deviceConnected = true;
+      Serial.print("Connected\n");
+      scale.power_up();
     };
 
     void onDisconnect(BLEServer* pServer) {
       deviceConnected = false;
+      Serial.print("Disconnected\n");
+      scale.power_down();
     }
 };
 
@@ -78,13 +81,7 @@ void setup() {
 
 void loop() {
   if (deviceConnected) {
-    if (!wasConnected) {
-      Serial.print("Connected\n");
-      scale.power_up();
-      wasConnected = true;
-    }
-
-    Serial.print("*** Sent Value: ");
+    Serial.print("Sent Value: ");
 
     if (scale.is_ready()) {
       char txString[8];
@@ -100,14 +97,7 @@ void loop() {
       Serial.print("no data");
     }
     Serial.print("\n");
-
-  } else {
-    if (wasConnected) {
-      Serial.print("Disconnected\n");
-      scale.power_down();
-      wasConnected = false;
-    }
   }
 
-  delay(1000);
+  delay(5000);
 }
