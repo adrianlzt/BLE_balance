@@ -13,7 +13,7 @@
 HX711 scale;
 const int LOADCELL_DOUT_PIN = 18;
 const int LOADCELL_SCK_PIN = 21;
-const int LOADCELL_OFFSET = -155412;
+const int LOADCELL_OFFSET = -151562;
 const int LOADCELL_SCALE = 22;
 
 BLECharacteristic *pCharacteristic;
