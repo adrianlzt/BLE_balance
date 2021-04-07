@@ -22,10 +22,15 @@ const int LOADCELL_OFFSET = -153322;
 //const int LOADCELL_OFFSET = -149802;
 const int LOADCELL_SCALE = 22;
 
+// Tanque Gaslow R67 11kg
 // Peso del tanque de gas en vacío, en gramos
 const int void_tank = 12400;
-// capacidad del tanque, en gramos
-const int tank_capacity = 11760;
+// capacidad del tanque, en gramos (21L * 0.56kg/L)
+//const int tank_capacity = 11760;
+// Pero el llenado real máximo que consigo es este valor,
+// contando con que la placa de arduino, bateria y cajas están
+// también encima de la báscula
+const int tank_capacity = 10830;
 
 BLECharacteristic *pCharacteristic;
 bool deviceConnected = false;
