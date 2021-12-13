@@ -1,0 +1,8 @@
+{
+    "offset": -160483,
+    "scale": 21074.4,
+    "deepsleep_ms": 1,
+    "awake_ms": 99999999,
+    "advertisment_us": 500000,
+    "interval_ms": 1000
+}
