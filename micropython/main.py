@@ -52,6 +52,11 @@ AWAKE_MS = 'awake_ms'
 ADVERTISMENT_US = 'advertisment_us'
 INTERVAL_MS = 'interval_ms'
 
+# Si el peso obtenido no está en estos márgenes, volver a tomar otra medida
+# tras un segundo
+MIN_ALLOWED_WEIGHT = 5
+MAX_ALLOWED_WEIGHT = 30
+
 
 # Cargar la configuración
 CONFIG_FILE = 'config.json'
@@ -125,10 +130,17 @@ class BLE():
         data += b'\x16' # Type: Service Data - 16 bit UUID (0x16)
         data += b'\x1d\x18' # UUID 16: Weight Scale (0x181d)
 
-        weight = self.hx711.get_units()
+        # Si el peso obtenido no está en estos márgenes, volver a tomar otra medida
+        weight_kg = 0
+        while weight_kg < MIN_ALLOWED_WEIGHT or weight_kg > MAX_ALLOWED_WEIGHT:
+            # No uso get_units porque a veces da unas lecturas muy altas (cientos de kg) y como usa un low pass filter
+            # la siguiente medida se vería afectada.
+            weight = (self.hx711.read() - self.hx711.OFFSET ) / self.hx711.SCALE
+            weight_kg = int(weight * 200)
+            sleep_ms(1000)
 
         data_weight = b'\x20' # mark as stabilized weight
-        data_weight += pack('H', int(weight*200)) # weight in kilograms
+        data_weight += pack('H', weight_kg) # weight in kilograms
         data_weight += b'\x00\x00\x00\x00\x00\x00\x00\x00'
 
         self.ble.gatts_write(self.scale_ble, data_weight, True) # el True es para notificar a clientes subscritos
@@ -136,7 +148,7 @@ class BLE():
         data += data_weight
         self.ble.gap_advertise(config[ADVERTISMENT_US], bytearray(data))
 
-        print(f"Advertiser: {weight}")
+        #print(f"Advertiser: {weight_kg} kg")
 
 
     def register(self):
