@@ -57,6 +57,17 @@ INTERVAL_MS = 'interval_ms'
 MIN_ALLOWED_WEIGHT = 5
 MAX_ALLOWED_WEIGHT = 30
 
+# Cuantas medidas obtenemos para calcular el valor
+NUMBER_OF_SAMPLES = 5
+
+# Cuantas veces intentar tomar las medidas antes de desistir
+MAX_NUMBER_OF_RETRIES = 3
+
+# Cual es el máximo error entre las medidas permitido.
+# Si el error es mayor, volver a tomar otra serie de medidas.
+# La unidad es la original que se obtiene de hx711.read()
+MAX_ALLOWED_ERROR = 1/200
+
 
 # Cargar la configuración
 CONFIG_FILE = 'config.json'
@@ -130,17 +141,8 @@ class BLE():
         data += b'\x16' # Type: Service Data - 16 bit UUID (0x16)
         data += b'\x1d\x18' # UUID 16: Weight Scale (0x181d)
 
-        # Si el peso obtenido no está en estos márgenes, volver a tomar otra medida
-        weight_kg = 0
-        while weight_kg < MIN_ALLOWED_WEIGHT or weight_kg > MAX_ALLOWED_WEIGHT:
-            # No uso get_units porque a veces da unas lecturas muy altas (cientos de kg) y como usa un low pass filter
-            # la siguiente medida se vería afectada.
-            weight = (self.hx711.read() - self.hx711.OFFSET ) / self.hx711.SCALE
-            weight_kg = int(weight * 200)
-            sleep_ms(1000)
-
         data_weight = b'\x20' # mark as stabilized weight
-        data_weight += pack('H', weight_kg) # weight in kilograms
+        data_weight += pack('H', self.get_weight_kg()) # weight in kilograms
         data_weight += b'\x00\x00\x00\x00\x00\x00\x00\x00'
 
         self.ble.gatts_write(self.scale_ble, data_weight, True) # el True es para notificar a clientes subscritos
@@ -149,6 +151,36 @@ class BLE():
         self.ble.gap_advertise(config[ADVERTISMENT_US], bytearray(data))
 
         #print(f"Advertiser: {weight_kg} kg")
+
+
+    def get_weight_kg(self):
+        """Obtiene el peso en kg.
+
+        Si el peso obtenido no está en estos márgenes, volver a tomar otra medida.
+        Se tomas varias medidas y se descarta si ambas no tienen unos valores similares.
+        Si tras MAX_NUMBER_OF_RETRIES no se consigue una medida, se devuelve 0.
+        """
+        # Si el peso obtenido no está en estos márgenes, volver a tomar otra medida
+        weight_kg = 0
+        for _ in range(MAX_NUMBER_OF_RETRIES):
+            measures = []
+            for _ in range(NUMBER_OF_SAMPLES):
+                measures.append(self.hx711.read())
+
+            if max(measures) - min(measures) > MAX_ALLOWED_ERROR:
+                print(f"Error: las medidas no tienen unos valores similares: {measures}")
+                continue
+
+            weight = sum(measures) / len(measures)
+            weight_kg = int(weight * 200)
+
+            # Si el peso obtenido está en unos márgenes permitidos, retornar el valor
+            if weight_kg > MIN_ALLOWED_WEIGHT or weight_kg < MAX_ALLOWED_WEIGHT:
+                return weight_kg
+
+            sleep_ms(1000)
+
+        return 0
 
 
     def register(self):
