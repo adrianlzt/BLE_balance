@@ -73,9 +73,10 @@ config = {
 }
 
 
-# Cargar la configuración
+# Cargar la configuración, pisando con el fichero los valores por defecto
 with open(CONFIG_FILE, 'r') as f:
-    config = json.load(f)
+    file_config = json.load(f)
+    config.update(file_config)
 
 
 def save_config():
@@ -139,7 +140,7 @@ class BLE():
         data += data_weight
         self.ble.gap_advertise(config[ADVERTISMENT_US], bytearray(data))
 
-        print(f"Advertiser: {weight}")
+        print(f"Advertiser: {weight} kg")
 
 
     def register(self):
@@ -262,7 +263,7 @@ if machine.reset_cause() == machine.DEEPSLEEP_RESET:
     print('woke from a deep sleep')
     awake_ms = config[AWAKE_MS]
 
-print("Starting BLE, deep sleep in {awake_ms/1000} seconds")
+print(f"Starting BLE, deep sleep in {awake_ms/1000} seconds")
 ble = BLE("ESP32")
 
 # Setting timer for deep sleep
