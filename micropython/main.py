@@ -66,8 +66,8 @@ MAX_NUMBER_OF_RETRIES = 3
 
 # Cual es el máximo error entre las medidas permitido.
 # Si el error es mayor, volver a tomar otra serie de medidas.
-# La unidad es la original que se obtiene de hx711.read()
-MAX_ALLOWED_ERROR = 1/200
+# En kg
+MAX_ALLOWED_ERROR = 1
 
 
 # Cargar la configuración
@@ -146,7 +146,9 @@ class BLE():
         data += b'\x1d\x18' # UUID 16: Weight Scale (0x181d)
 
         data_weight = b'\x20' # mark as stabilized weight
-        data_weight += pack('H', self.get_weight_kg()) # weight in kilograms
+        weight = self.get_weight_kg()
+        print(f"peso: {weight} kg")
+        data_weight += pack('H', int(weight*200)) # peso convertido al formato esperado
         data_weight += b'\x00\x00\x00\x00\x00\x00\x00\x00'
 
         self.ble.gatts_write(self.scale_ble, data_weight, True) # el True es para notificar a clientes subscritos
@@ -167,20 +169,22 @@ class BLE():
         for _ in range(MAX_NUMBER_OF_RETRIES):
             measures = []
             for _ in range(NUMBER_OF_SAMPLES):
-                measures.append(self.hx711.read())
+                measures.append((self.hx711.read()-config[OFFSET])/config[SCALE])
 
             if max(measures) - min(measures) > MAX_ALLOWED_ERROR:
                 print(f"Error: las medidas no tienen unos valores similares: {measures}")
                 continue
 
-            weight = sum(measures) / len(measures)
-            weight_kg = int(weight * 200)
+            weight_kg = sum(measures) / len(measures)
+            #weight_kg = int(weight * 200) ~ por que este 200? necesario?
 
             # Si el peso obtenido está en unos márgenes permitidos, retornar el valor
             if weight_kg > MIN_ALLOWED_WEIGHT or weight_kg < MAX_ALLOWED_WEIGHT:
                 return weight_kg
 
             sleep_ms(1000)
+
+        print("Error: no se pudo obtener un peso válido")
 
         return 0
 
