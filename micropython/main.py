@@ -48,6 +48,7 @@ LOADCELL_SCK_PIN = 21;
 OFFSET = 'offset'
 SCALE = 'scale'
 DEEPSLEEP_MS = 'deepsleep_ms'
+INITAL_AWAKE_MS = 'initial_awake_ms'
 AWAKE_MS = 'awake_ms'
 ADVERTISMENT_US = 'advertisment_us'
 INTERVAL_MS = 'interval_ms'
@@ -77,6 +78,8 @@ config = {
     SCALE: 1.0,
     # Cuanto tiempo pasa en el deep sleep (sin emitir nada por BLE)
     DEEPSLEEP_MS: 1000,
+    # Cuanto tiempo pasa despierto en el primer arranque
+    INITAL_AWAKE_MS: 120000,
     # Cuanto tiempo pasa despierto
     AWAKE_MS: 1000,
     # Cada cuanto se envia un advertisment BLE
@@ -86,9 +89,10 @@ config = {
 }
 
 
-# Cargar la configuración
+# Cargar la configuración, pisando con el fichero los valores por defecto
 with open(CONFIG_FILE, 'r') as f:
-    config = json.load(f)
+    file_config = json.load(f)
+    config.update(file_config)
 
 
 def save_config():
@@ -149,8 +153,6 @@ class BLE():
 
         data += data_weight
         self.ble.gap_advertise(config[ADVERTISMENT_US], bytearray(data))
-
-        #print(f"Advertiser: {weight_kg} kg")
 
 
     def get_weight_kg(self):
@@ -228,12 +230,16 @@ class BLE():
                 self.ble.gatts_notify(0, self.tx, f"scale: {config[SCALE]}\n")
 
             elif message.startswith('deepsleep?'):
-                print(f"get scale: {config[DEEPSLEEP_MS]}")
+                print(f"get deepsleep: {config[DEEPSLEEP_MS]}")
                 self.ble.gatts_notify(0, self.tx, f"deepsleep: {config[DEEPSLEEP_MS]}\n")
 
             elif message.startswith('awake?'):
-                print(f"get scale: {config[AWAKE_MS]}")
+                print(f"get awake: {config[AWAKE_MS]}")
                 self.ble.gatts_notify(0, self.tx, f"awake: {config[AWAKE_MS]}\n")
+
+            elif message.startswith('initial_awake?'):
+                print(f"get initial_awake: {config[INITAL_AWAKE_MS]}")
+                self.ble.gatts_notify(0, self.tx, f"initial_awake: {config[INITAL_AWAKE_MS]}\n")
 
             elif message.startswith('interval?'):
                 print(f"get interval: {config[INTERVAL_MS]}")
@@ -263,6 +269,12 @@ class BLE():
                 self.ble.gatts_notify(0, self.tx, "OK\n")
                 save_config()
 
+            elif message.startswith('initial_awake='):
+                config[INITAL_AWAKE_MS] = int(message.split('=')[1])
+                print(f"set initial awake to: {config[INITAL_AWAKE_MS]}")
+                self.ble.gatts_notify(0, self.tx, "OK\n")
+                save_config()
+
             elif message.startswith('awake='):
                 config[AWAKE_MS] = int(message.split('=')[1])
                 print(f"set awake to: {config[AWAKE_MS]}")
@@ -288,12 +300,14 @@ def dslep():
     deepsleep(config[DEEPSLEEP_MS])
 
 
+awake_ms = config[INITAL_AWAKE_MS]
 if machine.reset_cause() == machine.DEEPSLEEP_RESET:
     print('woke from a deep sleep')
+    awake_ms = config[AWAKE_MS]
 
-print("Starting BLE")
+print(f"Starting BLE, deep sleep in {awake_ms/1000} seconds")
 ble = BLE("ESP32")
 
 # Setting timer for deep sleep
 timer2 = Timer(3)
-timer2.init(period=config[AWAKE_MS], mode=Timer.ONE_SHOT, callback=lambda _: dslep())
+timer2.init(period=awake_ms, mode=Timer.ONE_SHOT, callback=lambda _: dslep())
