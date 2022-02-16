@@ -140,13 +140,20 @@ class BLE():
         """
         data = b'\x02\x01\x06' # flags: BR/EDR Not Supported + LE General Discoverable Mode
 
+        # TODO mover a formato Mi Scale v2. Enviar temperatura como impedancia.
+
         # simular bascula
         data += b'\x0d' # length (type + pack)
         data += b'\x16' # Type: Service Data - 16 bit UUID (0x16)
         data += b'\x1d\x18' # UUID 16: Weight Scale (0x181d)
 
         data_weight = b'\x20' # mark as stabilized weight
-        weight = self.get_weight_kg()
+        try:
+            weight = self.get_weight_kg()
+        except Exception as e:
+            print(f"Error getting weight: {e}")
+            return
+
         print(f"peso: {weight} kg")
         data_weight += pack('H', int(weight*200)) # peso convertido al formato esperado
         data_weight += b'\x00\x00\x00\x00\x00\x00\x00\x00'
@@ -184,9 +191,7 @@ class BLE():
 
             sleep_ms(1000)
 
-        print("Error: no se pudo obtener un peso válido")
-
-        return 0
+        raise Exception("Error: no se pudo obtener un peso válido")
 
 
     def register(self):
