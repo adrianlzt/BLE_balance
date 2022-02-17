@@ -11,24 +11,30 @@
 #   obtiene el scale de la báscula
 # deepsleep?
 #   obtiene el tiempo de deep sleep
+# initial_awake?
+#   obtiene el tiempo de awake tras el primer arranque
 # awake?
 #   obtiene el tiempo de awake
-# advertisment?
-#   obtiene el tiempo de advertisment
 # interval?
 #   obtiene el tiempo entre nuevas mediciones
+# advertisment?
+#   obtiene el tiempo de advertisment
+# temperature?
+#   obtiene la temperatura del sensor
 # offset=<valor>
 #   establece el offset de la báscula
 # scale=<valor>
 #   establece el scale de la báscula
 # deepsleep=<valor>
 #   establece el tiempo de deep sleep (ms)
+# initial_awake=<valor>
+#   establece el tiempo de awake tras el primer arranque (ms)
 # awake=<valor>
 #   establece el tiempo de awake (ms)
-# advertisment=<valor>
-#   establece el tiempo entre envíos de advertisment (us)
 # interval=<valor>
 #   establece el tiempo entre mediciones (ms)
+# advertisment=<valor>
+#   establece el tiempo entre envíos de advertisment (us)
 
 import esp32
 import random
@@ -270,6 +276,10 @@ class BLE():
             elif message.startswith('advertisment?'):
                 print(f"get advertisment: {config[ADVERTISMENT_US]}")
                 self.ble.gatts_notify(0, self.tx, f"advertisment: {config[ADVERTISMENT_US]}\n")
+
+            elif message.startswith('temperature?'):
+                print(f"get temperature: {temperature}")
+                self.ble.gatts_notify(0, self.tx, f"temperature: {temperature} C\n")
 
             elif message.startswith('offset='):
                 config[OFFSET] = float(message.split('=')[1])
