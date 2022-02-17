@@ -42,6 +42,15 @@ from struct import pack
 
 from hx711_gpio import HX711
 
+# Calculamos la temperatura lo antes posible, para evitar medir
+# el calentamiento del ESP32.
+# La convertimos a celsius
+temperature = (esp32.raw_temperature() - 32) * 5 / 9
+# Si da un número negativo, convertimos al formato que espera el parser de miscale
+# para números negativos.
+if temperature < 0:
+    temperature = 256 + temperature
+
 LOADCELL_DOUT_PIN = 18;
 LOADCELL_SCK_PIN = 21;
 
@@ -156,7 +165,11 @@ class BLE():
 
         print(f"peso: {weight} kg")
         data_weight += pack('H', int(weight*200)) # peso convertido al formato esperado
-        data_weight += b'\x00\x00\x00\x00\x00\x00\x00\x00'
+        data_weight += b'\x00\x00\x00\x00\x00\x00\x00'
+
+        # Usamos rssi para enviar la temperatura del chip, en grados celsius
+        rssi = temperature # si supera 127, se calcula el valor negativo (rssi-256)
+        data_weight += pack('B', rssi)
 
         self.ble.gatts_write(self.scale_ble, data_weight, True) # el True es para notificar a clientes subscritos
 
