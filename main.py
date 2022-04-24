@@ -174,7 +174,7 @@ class BLE():
         data_weight += b'\x00\x00\x00\x00\x00\x00\x00'
 
         # Usamos rssi para enviar la temperatura del chip, en grados celsius
-        rssi = temperature # si supera 127, se calcula el valor negativo (rssi-256)
+        rssi = int(temperature) # si supera 127, se calcula el valor negativo (rssi-256)
         data_weight += pack('B', rssi)
 
         self.ble.gatts_write(self.scale_ble, data_weight, True) # el True es para notificar a clientes subscritos
