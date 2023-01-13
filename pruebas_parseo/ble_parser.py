@@ -48,10 +48,11 @@ class BleParser:
             )
         ):
             print(f"msg_length={msg_length}, len(data)={len(data)}, adpayload_start={adpayload_start}, adpayload_size={adpayload_size}")
-            print(f"msg_length <= adpayload_start: {msg_length <= adpayload_start}")
-            print(f"msg_length != len(data): {msg_length != len(data)}")
-            print(f"msg_length != (adpayload_start + adpayload_size + (0 if is_ext_packet else 1)): {msg_length != (adpayload_start + adpayload_size + (0 if is_ext_packet else 1))}")
+            print(f"msg_length <= adpayload_start: {msg_length <= adpayload_start} (debe ser False)")
+            print(f"msg_length != len(data): {msg_length != len(data)} (debe ser False)")
+            print(f"msg_length != (adpayload_start + adpayload_size + (0 if is_ext_packet else 1)): {msg_length != (adpayload_start + adpayload_size + (0 if is_ext_packet else 1))} (debe ser False)")
             return None, None
+
         # extract RSSI byte
         rssi_index = 18 if is_ext_packet else msg_length - 1
         rssi = data[rssi_index]

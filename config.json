@@ -1,1 +1,9 @@
-{"offset": -160483, "initial_awake_ms": 120000, "awake_ms": 30000, "interval_ms": 20000, "deepsleep_ms": 300000, "advertisment_us": 1500000, "scale": 21074.4}
+{
+  "offset": -160483,
+  "initial_awake_ms": 120000,
+  "awake_ms": 15000,
+  "interval_ms": 10000,
+  "deepsleep_ms": 900000,
+  "advertisment_us": 4000000,
+  "scale": 21074.4
+}
