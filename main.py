@@ -51,6 +51,12 @@ from hx711_gpio import HX711
 # Calculamos la temperatura lo antes posible, para evitar medir
 # el calentamiento del ESP32.
 # La convertimos a celsius
+# Parece que ya no existe sensor de temperatura en el ESP32:
+# https://github.com/espressif/arduino-esp32/issues/2422
+# https://www.espressif.com/sites/default/files/documentation/esp32-wroom-32_datasheet_en.pdf
+# Revision v2.5 06/2018: Deleted Temperature Sensor in Table 1: ESP32-WROOM-32 Specifications
+# El S3 y C3 si parece que tienen sensor de temperatura:
+# https://www.espressif.com/sites/default/files/documentation/esp32-s3_datasheet_en.pdf
 temperature = (esp32.raw_temperature() - 32) * 5 / 9
 # Si da un número negativo, convertimos al formato que espera el parser de miscale
 # para números negativos.
@@ -155,37 +161,32 @@ class BLE():
         """
         data = b'\x02\x01\x06' # flags: BR/EDR Not Supported + LE General Discoverable Mode
 
-        # TODO mover a formato Mi Scale v2. Enviar temperatura como impedancia.
-
-        # simular bascula
-        data += b'\x0d' # length (type + pack)
+        # bthome
+        data += b'\x0a' # length (type + pack)
         data += b'\x16' # Type: Service Data - 16 bit UUID (0x16)
-        data += b'\x1d\x18' # UUID 16: Weight Scale (0x181d)
+        data += b'\xd2\xfc' # UUID 0xD2FC (reversed)
+        data += b'\x40' # no encryption, BTHome V2
 
-        data_weight = b'\x20' # mark as stabilized weight
+        data += b'\x02' # temperature measurement
+        data += pack('H', int(temperature * 100)) # little endian, 2500 * 0.01 = 25.00 C
+
         try:
             weight = self.get_weight_kg()
         except Exception as e:
             print(f"Error getting weight: {e}")
             return
 
-        print(f"peso: {weight} kg")
+        data += b'\x06' # mass (kg)
+        data += pack('H', int(weight * 100)) # little endian, 8030 * 0.01 = 80.3kg
+
+        print(f"peso: {weight} kg  / temperatura: {temperature} C")
+
+        # Para gatt
+        data_weight = b'\x20'
         data_weight += pack('H', int(weight*200)) # peso convertido al formato esperado
-
-        # Con esto enviamos solo el peso
         data_weight += b'\x00\x00\x00\x00\x00\x00\x00\x00'
-
-        # Con esto intentamos meter la temperatura como RSSI
-        # Está comentado porque la app del móvil no ve el dispositivo si tenemos esto configurado.
-        # data_weight += b'\x00\x00\x00\x00\x00\x00\x00'
-
-        # # Usamos rssi para enviar la temperatura del chip, en grados celsius
-        # rssi = int(temperature) # si supera 127, se calcula el valor negativo (rssi-256)
-        # data_weight += pack('B', rssi)
-
         self.ble.gatts_write(self.scale_ble, data_weight, True) # el True es para notificar a clientes subscritos
 
-        data += data_weight
         self.ble.gap_advertise(config[ADVERTISMENT_US], bytearray(data))
 
 
