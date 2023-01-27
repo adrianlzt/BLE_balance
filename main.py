@@ -171,11 +171,17 @@ class BLE():
 
         print(f"peso: {weight} kg")
         data_weight += pack('H', int(weight*200)) # peso convertido al formato esperado
-        data_weight += b'\x00\x00\x00\x00\x00\x00\x00'
 
-        # Usamos rssi para enviar la temperatura del chip, en grados celsius
-        rssi = int(temperature) # si supera 127, se calcula el valor negativo (rssi-256)
-        data_weight += pack('B', rssi)
+        # Con esto enviamos solo el peso
+        data_weight += b'\x00\x00\x00\x00\x00\x00\x00\x00'
+
+        # Con esto intentamos meter la temperatura como RSSI
+        # Está comentado porque la app del móvil no ve el dispositivo si tenemos esto configurado.
+        # data_weight += b'\x00\x00\x00\x00\x00\x00\x00'
+
+        # # Usamos rssi para enviar la temperatura del chip, en grados celsius
+        # rssi = int(temperature) # si supera 127, se calcula el valor negativo (rssi-256)
+        # data_weight += pack('B', rssi)
 
         self.ble.gatts_write(self.scale_ble, data_weight, True) # el True es para notificar a clientes subscritos
 
